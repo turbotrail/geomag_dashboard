@@ -7,16 +7,16 @@ import altair as alt
 st.set_page_config("Geomagnetic Storm Dashboard", layout="wide")
 
 # --- Utility ---
-def get_kp_level_color(kp):
-    if kp <= 4:
+def get_kp_level_color(kp: float) -> str:
+    if kp < 5:
         return "🟩 G0 (Quiet)"
-    elif kp == 5:
+    elif 5 <= kp < 6:
         return "🟨 G1 (Minor)"
-    elif kp == 6:
+    elif 6 <= kp < 7:
         return "🟧 G2 (Moderate)"
-    elif kp == 7:
+    elif 7 <= kp < 8:
         return "🔴 G3 (Strong)"
-    elif kp == 8:
+    elif 8 <= kp < 9:
         return "🔴 G4 (Severe)"
     else:
         return "🔴 G5 (Extreme)"
@@ -93,6 +93,22 @@ def fetch_geomag_activity():
         st.warning(f"Storm data fetch failed: {e}")
         return pd.DataFrame()
 
+
+def get_kp_level_color(kp: float):
+    if kp < 5:
+        return "G0 (Quiet)", "#4CAF50"   # Green
+    elif 5 <= kp < 6:
+        return "G1 (Minor)", "#FFEB3B"   # Yellow
+    elif 6 <= kp < 7:
+        return "G2 (Moderate)", "#FF9800"  # Orange
+    elif 7 <= kp < 8:
+        return "G3 (Strong)", "#F44336"    # Red
+    elif 8 <= kp < 9:
+        return "G4 (Severe)", "#D32F2F"    # Darker Red
+    else:
+        return "G5 (Extreme)", "#B71C1C"   # Deep Red
+    
+
 # --- Fetch All ---
 kp_df = fetch_kp_index()
 alerts_df = fetch_alerts()
@@ -104,6 +120,7 @@ st.markdown("Real-time monitoring of geomagnetic activity, alerts, and Kp index 
 
 # --- Kp Block View ---
 st.subheader("📂 Latest Kp Index (Last 24 Hours — Block View)")
+
 if not kp_df.empty:
     kp_recent = kp_df[kp_df["time_tag"] > now - datetime.timedelta(hours=24)]
     kp_hourly = kp_recent[["time_tag", "kp_index"]].set_index("time_tag").resample("3H").mean().reset_index().tail(8)
@@ -113,13 +130,13 @@ if not kp_df.empty:
     for idx, row in kp_hourly.iterrows():
         kp = row["kp_index"]
         time_str = row["time_tag"].strftime("%H:%M %Z")
-        level = get_kp_level_color(kp)
+        label, color = get_kp_level_color(kp)
         with block_cols[idx]:
             st.markdown(f"""
-                <div style='background-color: {'#4CAF50' if kp < 5 else '#F44336'}; 
+                <div style='background-color: {color}; 
                             padding: 12px; border-radius: 8px; text-align: center;
-                            font-weight: bold; color: white;'>
-                    {time_str}<br/>Kp {kp:.1f}<br/>{level}
+                            font-weight: bold; color: black;'>
+                    {time_str}<br/>Kp {kp:.1f}<br/>{label}
                 </div>
             """, unsafe_allow_html=True)
 else:
